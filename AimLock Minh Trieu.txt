@@ -1,0 +1,1352 @@
+--// ROBLOX AIMLOCK MENU - BATTLEFIELD STYLE
+--// LocalScript
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- =========================
+-- SETTINGS
+-- =========================
+
+local AIM_PART = "HumanoidRootPart"
+
+local AIMLOCK_STRENGTH = 1
+local FOV_AIM_STRENGTH = 0.88
+
+local MAX_DISTANCE = 400
+local FOV_RADIUS = 180
+
+local TEAM_CHECK = false
+local WALL_CHECK = true
+
+local PREDICTION = 0.08
+
+-- =========================
+-- STATES
+-- =========================
+local aimlockEnabled = false
+local fovAimEnabled = true
+local menuVisible = true
+
+local currentTarget = nil
+local shooting = false
+local holding = false
+
+-- ESP
+local targetHighlight = nil
+local targetBillboard = nil
+
+-- =========================
+-- GUI
+-- =========================
+local gui = Instance.new("ScreenGui")
+gui.Name = "BattlefieldAimlock"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Parent = gui
+main.Size = UDim2.new(0,260,0,460)
+main.Position = UDim2.new(0.5,-130,0.5,-195)
+main.BackgroundColor3 = Color3.fromRGB(18,18,18)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,12)
+corner.Parent = main
+
+-- =========================
+-- TÊN MENU KHI THU GỌN
+-- =========================
+
+local miniTitle = Instance.new("TextLabel")
+miniTitle.Parent = main
+
+miniTitle.Size =
+	UDim2.new(1,-50,0,50)
+
+miniTitle.Position =
+	UDim2.new(0,12,0,0)
+
+miniTitle.BackgroundTransparency = 1
+
+miniTitle.Text = "              YT mtsenkai ☄️"
+
+miniTitle.TextColor3 =
+	Color3.fromRGB(255,255,255)
+
+miniTitle.Font =
+	Enum.Font.GothamBold
+
+miniTitle.TextSize = 18
+
+miniTitle.TextXAlignment =
+	Enum.TextXAlignment.Left
+
+miniTitle.Visible = false
+
+-- =========================
+-- HIỆU ỨNG CHỮ ĐỎ TRẮNG
+-- =========================
+
+task.spawn(function()
+
+	local red = false
+
+	while miniTitle.Parent do
+
+		if red then
+
+			TweenService:Create(
+				miniTitle,
+				TweenInfo.new(
+					0.7,
+					Enum.EasingStyle.Linear
+				),
+				{
+					TextColor3 =
+						Color3.fromRGB(
+							255,255,255
+						)
+				}
+			):Play()
+
+		else
+
+			TweenService:Create(
+				miniTitle,
+				TweenInfo.new(
+					0.7,
+					Enum.EasingStyle.Linear
+				),
+				{
+					TextColor3 =
+						Color3.fromRGB(
+							255,0,0
+						)
+				}
+			):Play()
+		end
+
+		red = not red
+
+		task.wait(0.7)
+	end
+end)
+
+-- =========================
+-- THU GỌN MENU
+-- =========================
+
+local minimized = false
+local normalSize = main.Size
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Parent = main
+
+minimizeButton.Size =
+	UDim2.new(0,32,0,32)
+
+minimizeButton.Position =
+	UDim2.new(1,-40,0,8)
+
+minimizeButton.BackgroundColor3 =
+	Color3.fromRGB(30,30,30)
+
+minimizeButton.Text = "—"
+
+minimizeButton.TextColor3 =
+	Color3.fromRGB(255,255,255)
+
+minimizeButton.Font =
+	Enum.Font.GothamBold
+
+minimizeButton.TextSize = 22
+
+minimizeButton.BorderSizePixel = 0
+
+local miniCorner =
+	Instance.new("UICorner")
+
+miniCorner.CornerRadius =
+	UDim.new(0,8)
+
+miniCorner.Parent = minimizeButton
+
+local TweenService =
+	game:GetService("TweenService")
+
+minimizeButton.MouseButton1Click:Connect(function()
+
+	minimized = not minimized
+
+	for _,v in pairs(main:GetChildren()) do
+
+		if v ~= minimizeButton
+		and v ~= miniTitle
+		and not v:IsA("UICorner")
+		and not v:IsA("UIStroke") then
+
+			v.Visible = not minimized
+		end
+	end
+
+	if minimized then
+
+		miniTitle.Visible = true
+
+		TweenService:Create(
+			main,
+			TweenInfo.new(
+				0.25,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = UDim2.new(0,260,0,50)
+			}
+		):Play()
+
+		minimizeButton.Text = "+"
+
+	else
+
+		miniTitle.Visible = false
+
+		TweenService:Create(
+			main,
+			TweenInfo.new(
+				0.25,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = normalSize
+			}
+		):Play()
+
+		minimizeButton.Text = "—"
+	end
+end)
+-- =========================
+-- MAIN BORDER
+-- =========================
+local stroke = Instance.new("UIStroke")
+stroke.Parent = main
+stroke.Thickness = 3
+stroke.Color = Color3.fromRGB(255,0,0)
+
+task.spawn(function()
+
+    while gui.Parent do
+
+        TweenService:Create(
+            stroke,
+            TweenInfo.new(0.8),
+            {
+                Color = Color3.fromRGB(255,255,255)
+            }
+        ):Play()
+
+        task.wait(0.8)
+
+        TweenService:Create(
+            stroke,
+            TweenInfo.new(0.8),
+            {
+                Color = Color3.fromRGB(255,0,0)
+            }
+        ):Play()
+
+        task.wait(0.8)
+    end
+end)
+
+-- =========================
+-- TITLE
+-- =========================
+local title = Instance.new("TextLabel")
+title.Parent = main
+title.Size = UDim2.new(1,0,0,45)
+title.BackgroundTransparency = 1
+
+title.Text = "MinhTrieu Aimlock V1 🚀"
+
+-- chữ mỏng hơn
+title.Font = Enum.Font.Gotham
+
+title.TextSize = 20
+
+title.TextColor3 =
+	Color3.fromRGB(255,255,255)
+
+-- hiệu ứng đổi màu đỏ trắng
+task.spawn(function()
+
+	local isRed = false
+
+	while title.Parent do
+
+		if isRed then
+
+			TweenService:Create(
+				title,
+				TweenInfo.new(
+					0.8,
+					Enum.EasingStyle.Linear
+				),
+				{
+					TextColor3 =
+						Color3.fromRGB(
+							255,255,255
+						)
+				}
+			):Play()
+
+		else
+
+			TweenService:Create(
+				title,
+				TweenInfo.new(
+					0.8,
+					Enum.EasingStyle.Linear
+				),
+				{
+					TextColor3 =
+						Color3.fromRGB(
+							255,0,0
+						)
+				}
+			):Play()
+		end
+
+		isRed = not isRed
+
+		task.wait(0.8)
+	end
+end)
+
+-- =========================
+-- BUTTON FUNCTION
+-- =========================
+local function createButton(name,posY)
+
+    local button = Instance.new("TextButton")
+    button.Parent = main
+    button.Size = UDim2.new(0,220,0,38)
+    button.Position = UDim2.new(0,20,0,posY)
+    button.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    button.TextColor3 = Color3.fromRGB(255,255,255)
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 10
+    button.Text = name
+    button.BorderSizePixel = 0
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0,10)
+    c.Parent = button
+
+    return button
+end
+
+-- =========================
+-- BUTTONS
+-- =========================
+local aimButton = createButton("Aimlock 💻 : OFF",60)
+
+local fovButton = createButton("FOV Giới hạn Aim : ON",210)
+
+local toggleMenuButton =
+    createButton("Ẩn Menu",360)
+
+-- =========================
+-- FOV BOX
+-- =========================
+local fovBox = Instance.new("TextBox")
+fovBox.Parent = main
+fovBox.Size = UDim2.new(0,220,0,38)
+fovBox.Position = UDim2.new(0,20,0,260)
+fovBox.BackgroundColor3 = Color3.fromRGB(30,30,30)
+fovBox.TextColor3 = Color3.fromRGB(255,255,255)
+fovBox.PlaceholderText = "Nhập FOV Radius..."
+fovBox.Text = tostring(FOV_RADIUS)
+fovBox.Font = Enum.Font.GothamBold
+fovBox.TextSize = 16
+fovBox.ClearTextOnFocus = false
+fovBox.BorderSizePixel = 0
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0,10)
+boxCorner.Parent = fovBox
+
+local applyButton =
+    createButton("Nhập",310)
+
+local destroyButton =
+    createButton("❌",410)
+
+-- =========================
+-- OPEN BUTTON
+-- =========================
+local openButton = Instance.new("TextButton")
+openButton.Parent = gui
+openButton.Size = UDim2.new(0,120,0,38)
+openButton.Position = UDim2.new(0,20,0.5,-19)
+openButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
+openButton.Text = "MT AIMLOCK V1"
+openButton.TextColor3 = Color3.fromRGB(255,255,255)
+openButton.Font = Enum.Font.GothamBold
+openButton.TextSize = 16
+openButton.Visible = false
+openButton.BorderSizePixel = 0
+openButton.Active = true
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0,10)
+openCorner.Parent = openButton
+
+local openStroke = Instance.new("UIStroke")
+openStroke.Parent = openButton
+openStroke.Thickness = 2
+
+task.spawn(function()
+
+    local hue = 0
+
+    while openButton.Parent do
+
+        hue += 0.005
+
+        if hue > 1 then
+            hue = 0
+        end
+
+        openStroke.Color =
+            Color3.fromHSV(hue,1,1)
+
+        task.wait()
+    end
+end)
+
+-- =========================
+-- DRAG OPEN BUTTON
+-- =========================
+local draggingOpen = false
+local dragInputOpen
+local dragStartOpen
+local startPosOpen
+
+local function updateOpen(input)
+
+    local delta = input.Position - dragStartOpen
+
+    openButton.Position = UDim2.new(
+        startPosOpen.X.Scale,
+        startPosOpen.X.Offset + delta.X,
+        startPosOpen.Y.Scale,
+        startPosOpen.Y.Offset + delta.Y
+    )
+end
+
+openButton.InputBegan:Connect(function(input)
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton1 then
+
+        draggingOpen = true
+        dragStartOpen = input.Position
+        startPosOpen = openButton.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState ==
+                Enum.UserInputState.End then
+
+                draggingOpen = false
+            end
+        end)
+    end
+end)
+
+openButton.InputChanged:Connect(function(input)
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseMovement then
+
+        dragInputOpen = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if input == dragInputOpen
+    and draggingOpen then
+
+        updateOpen(input)
+    end
+end)
+
+-- =========================
+-- FOV
+-- =========================
+local circle = Drawing.new("Circle")
+circle.Visible = true
+circle.Radius = FOV_RADIUS
+circle.Color = Color3.fromRGB(255,255,255)
+circle.Thickness = 2
+circle.Filled = false
+circle.Transparency = 1
+
+-- =========================
+-- ESP FUNCTIONS
+-- =========================
+local function removeESP()
+
+    if targetHighlight then
+        targetHighlight:Destroy()
+        targetHighlight = nil
+    end
+
+    if targetBillboard then
+        targetBillboard:Destroy()
+        targetBillboard = nil
+    end
+end
+
+local function createESP(target)
+
+    removeESP()
+
+    if not target
+    or not target.Character then
+        return
+    end
+
+    local character = target.Character
+
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = character
+    highlight.FillColor = Color3.fromRGB(255,0,0)
+    highlight.OutlineColor = Color3.fromRGB(255,255,255)
+    highlight.FillTransparency = 0.45
+    highlight.DepthMode =
+        Enum.HighlightDepthMode.AlwaysOnTop
+
+    targetHighlight = highlight
+
+    local head =
+        character:FindFirstChild("Head")
+        or character:FindFirstChild(AIM_PART)
+
+    if head then
+
+        local billboard =
+            Instance.new("BillboardGui")
+
+        billboard.Parent = head
+        billboard.Size =
+            UDim2.new(0,140,0,40)
+
+        billboard.AlwaysOnTop = true
+        billboard.StudsOffset =
+            Vector3.new(0,2.5,0)
+
+    end
+end
+
+-- =========================
+-- FUNCTIONS
+-- =========================
+local function isVisible(targetPart)
+
+    if not WALL_CHECK then
+        return true
+    end
+
+    local origin = camera.CFrame.Position
+    local direction = (targetPart.Position - origin)
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {player.Character}
+    params.IgnoreWater = true
+
+    local result = workspace:Raycast(
+        origin,
+        direction,
+        params
+    )
+
+    if not result then
+        return true
+    end
+
+    if result.Instance
+    and result.Instance:IsDescendantOf(targetPart.Parent) then
+        return true
+    end
+
+    return false
+end
+
+local function getClosestTarget()
+
+    local closest = nil
+    local shortestDistance = FOV_RADIUS
+
+    for _,v in pairs(Players:GetPlayers()) do
+
+        if v ~= player
+        and v.Character
+        and v.Character:FindFirstChild(AIM_PART) then
+
+            local humanoid =
+                v.Character:FindFirstChildOfClass("Humanoid")
+
+            if humanoid and humanoid.Health > 0 then
+
+                if TEAM_CHECK and v.Team == player.Team then
+                    continue
+                end
+
+                local aimPart = v.Character[AIM_PART]
+
+                if not isVisible(aimPart) then
+                    continue
+                end
+
+                local pos,visible =
+                    camera:WorldToViewportPoint(
+                        aimPart.Position
+                    )
+
+                if visible then
+
+                    local distance =
+                        (
+                            Vector2.new(pos.X,pos.Y)
+                            -
+                            Vector2.new(
+                                UserInputService:GetMouseLocation().X,
+                                UserInputService:GetMouseLocation().Y
+                            )
+                        ).Magnitude
+
+                    local worldDistance =
+                        (
+                            camera.CFrame.Position
+                            -
+                            aimPart.Position
+                        ).Magnitude
+
+                    if distance < shortestDistance
+                    and worldDistance <= MAX_DISTANCE then
+
+                        shortestDistance = distance
+                        closest = v
+                    end
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- =========================
+-- INPUT
+-- =========================
+UserInputService.InputBegan:Connect(function(input,gp)
+
+    if gp then
+        return
+    end
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton2 then
+
+        holding = true
+    end
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton1 then
+
+        shooting = true
+    end
+
+    if input.KeyCode == Enum.KeyCode.RightControl then
+
+        menuVisible = not menuVisible
+
+        main.Visible = menuVisible
+        openButton.Visible = not menuVisible
+    end
+
+    if input.KeyCode == Enum.KeyCode.l then
+
+        aimlockEnabled = not aimlockEnabled
+
+        if not aimlockEnabled then
+            removeESP()
+        end
+
+        aimButton.Text =
+            "Aimlock 💻: " ..
+            (aimlockEnabled and "ON" or "OFF")
+
+        aimButton.BackgroundColor3 =
+            aimlockEnabled
+            and Color3.fromRGB(255,0,0)
+            or Color3.fromRGB(35,35,35)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton2 then
+
+        holding = false
+    end
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton1 then
+
+        shooting = false
+    end
+end)
+
+-- =========================
+-- BUTTON EVENTS
+-- =========================
+aimButton.MouseButton1Click:Connect(function()
+
+    aimlockEnabled = not aimlockEnabled
+
+    if not aimlockEnabled then
+        removeESP()
+    end
+
+    aimButton.Text =
+        "Aimlock 💻: " ..
+        (aimlockEnabled and "ON" or "OFF")
+
+    aimButton.BackgroundColor3 =
+        aimlockEnabled
+        and Color3.fromRGB(255,0,0)
+        or Color3.fromRGB(35,35,35)
+end)
+
+fovButton.MouseButton1Click:Connect(function()
+
+    fovAimEnabled = not fovAimEnabled
+
+    circle.Visible = fovAimEnabled
+
+    fovButton.Text =
+        "FOV Circle : " ..
+        (fovAimEnabled and "ON" or "OFF")
+
+    fovButton.BackgroundColor3 =
+        fovAimEnabled
+        and Color3.fromRGB(255,0,0)
+        or Color3.fromRGB(35,35,35)
+end)
+
+toggleMenuButton.MouseButton1Click:Connect(function()
+
+    main.Visible = false
+    openButton.Visible = true
+end)
+
+openButton.MouseButton1Click:Connect(function()
+
+    main.Visible = true
+    openButton.Visible = false
+end)
+
+applyButton.MouseButton1Click:Connect(function()
+
+    local value = tonumber(fovBox.Text)
+
+    if value then
+
+        value = math.clamp(value,50,800)
+
+        FOV_RADIUS = value
+        circle.Radius = value
+
+        fovBox.Text = tostring(value)
+    else
+        fovBox.Text = tostring(FOV_RADIUS)
+    end
+end)
+
+destroyButton.MouseButton1Click:Connect(function()
+
+    removeESP()
+
+    circle:Remove()
+    gui:Destroy()
+end)
+
+-- =========================
+-- MAIN LOOP
+-- =========================
+RunService.RenderStepped:Connect(function()
+
+    circle.Position = Vector2.new(
+        UserInputService:GetMouseLocation().X,
+        UserInputService:GetMouseLocation().Y
+    )
+
+    local oldTarget = currentTarget
+
+    currentTarget = getClosestTarget()
+
+    if aimlockEnabled then
+
+        if currentTarget ~= oldTarget then
+
+            removeESP()
+
+            if currentTarget then
+                createESP(currentTarget)
+            end
+        end
+    else
+        removeESP()
+    end
+
+    if currentTarget
+    and currentTarget.Character
+    and currentTarget.Character:FindFirstChild(AIM_PART) then
+
+        local aimPart =
+            currentTarget.Character[AIM_PART]
+
+        if not isVisible(aimPart) then
+            return
+        end
+
+        local velocity =
+            aimPart.AssemblyLinearVelocity
+
+        local predictedPosition =
+            aimPart.Position
+            +
+            Vector3.new(
+                velocity.X * PREDICTION,
+                velocity.Y * 0.015,
+                velocity.Z * PREDICTION
+            )
+
+        predictedPosition =
+            predictedPosition
+            +
+            Vector3.new(0,0.85,0)
+
+        local aimCF =
+            CFrame.lookAt(
+                camera.CFrame.Position,
+                predictedPosition
+            )
+
+        if aimlockEnabled and holding then
+
+            camera.CFrame =
+                camera.CFrame:Lerp(
+                    aimCF,
+                    AIMLOCK_STRENGTH
+                )
+        end
+
+        if fovAimEnabled and shooting then
+
+            camera.CFrame =
+                camera.CFrame:Lerp(
+                    aimCF,
+                    FOV_AIM_STRENGTH
+                )
+        end
+    end
+end)
+-- =========================
+-- ĐỊNH VỊ PLAYER
+-- =========================
+
+local espEnabled = false
+local espTable = {}
+
+local ESPButton = createButton("Định Vị ☄️: OFF",110)
+
+-- =========================
+-- PLAYER COUNT UI
+-- =========================
+local countLabel = Instance.new("TextLabel")
+countLabel.Parent = gui
+countLabel.Size = UDim2.new(0,170,0,24)
+countLabel.Position = UDim2.new(0.5,-85,0,12)
+
+countLabel.BackgroundColor3 =
+	Color3.fromRGB(15,15,15)
+
+countLabel.BackgroundTransparency = 0.25
+
+countLabel.TextColor3 =
+	Color3.fromRGB(255,255,255)
+
+countLabel.Font = Enum.Font.Gotham
+countLabel.TextSize = 14
+countLabel.Visible = false
+
+countLabel.Text =
+	"MT☄️ Số Player : 0"
+
+local countCorner = Instance.new("UICorner")
+countCorner.CornerRadius = UDim.new(0,8)
+countCorner.Parent = countLabel
+
+local countStroke = Instance.new("UIStroke")
+countStroke.Parent = countLabel
+countStroke.Thickness = 1.2
+countStroke.Color = Color3.fromRGB(0,170,255)
+
+local function updatePlayerCount()
+
+	local count = 0
+
+	for _,v in pairs(espTable) do
+		count += 1
+	end
+
+	countLabel.Text =
+		"MT Số Player : "..count
+end
+
+local function clearESP(targetPlayer)
+
+	if targetPlayer.Character then
+
+		local oldHighlight =
+			targetPlayer.Character:FindFirstChild(
+				"PlayerESP"
+			)
+
+		if oldHighlight then
+			oldHighlight:Destroy()
+		end
+
+		local head =
+			targetPlayer.Character:FindFirstChild(
+				"Head"
+			)
+
+		if head then
+
+			local oldGui =
+				head:FindFirstChild(
+					"PlayerLocator"
+				)
+
+			if oldGui then
+				oldGui:Destroy()
+			end
+		end
+	end
+
+	espTable[targetPlayer] = nil
+
+	updatePlayerCount()
+end
+
+local function createESP(targetPlayer)
+
+	if targetPlayer == player then
+		return
+	end
+
+	if not espEnabled then
+		return
+	end
+
+	local character = targetPlayer.Character
+	if not character then
+		return
+	end
+
+	local head =
+		character:FindFirstChild("Head")
+
+	local hrp =
+		character:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	local humanoid =
+		character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if not head
+	or not hrp
+	or not humanoid then
+		return
+	end
+
+	clearESP(targetPlayer)
+
+	-- =========================
+	-- HIGHLIGHT XANH DƯƠNG
+	-- =========================
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "PlayerESP"
+	highlight.Adornee = character
+	highlight.Parent = character
+
+	highlight.FillColor =
+		Color3.fromRGB(0,170,255)
+
+	highlight.OutlineColor =
+		Color3.fromRGB(0,170,255)
+
+	highlight.FillTransparency = 0.55
+
+	highlight.DepthMode =
+		Enum.HighlightDepthMode.AlwaysOnTop
+
+	-- =========================
+	-- HEALTH BAR + DISTANCE
+	-- =========================
+	local billboard =
+		Instance.new("BillboardGui")
+
+	billboard.Name = "PlayerLocator"
+	billboard.Parent = head
+	billboard.Adornee = head
+
+	billboard.Size =
+		UDim2.new(0,95,0,16)
+
+	billboard.StudsOffset =
+		Vector3.new(0,2.7,0)
+
+	billboard.AlwaysOnTop = true
+
+	-- nền thanh máu
+	local back =
+		Instance.new("Frame")
+
+	back.Parent = billboard
+
+	back.Size =
+		UDim2.new(0,48,0,6)
+
+	back.Position =
+		UDim2.new(0,0,0.5,-3)
+
+	back.BackgroundColor3 =
+		Color3.fromRGB(35,35,35)
+
+	back.BorderSizePixel = 0
+
+	local backCorner =
+		Instance.new("UICorner")
+
+	backCorner.CornerRadius =
+		UDim.new(1,0)
+
+	backCorner.Parent = back
+
+	-- máu
+	local health =
+		Instance.new("Frame")
+
+	health.Name = "HealthBar"
+	health.Parent = back
+
+	health.Size =
+		UDim2.new(1,0,1,0)
+
+	health.BackgroundColor3 =
+		Color3.fromRGB(0,255,0)
+
+	health.BorderSizePixel = 0
+
+	local healthCorner =
+		Instance.new("UICorner")
+
+	healthCorner.CornerRadius =
+		UDim.new(1,0)
+
+	healthCorner.Parent = health
+
+	-- khoảng cách
+	local distanceText =
+		Instance.new("TextLabel")
+
+	distanceText.Parent = billboard
+
+	distanceText.BackgroundTransparency = 1
+
+	distanceText.Position =
+		UDim2.new(0,54,0,0)
+
+	distanceText.Size =
+		UDim2.new(0,40,1,0)
+
+	distanceText.Font =
+		Enum.Font.Gotham
+
+	distanceText.TextSize = 11
+
+	distanceText.TextColor3 =
+		Color3.fromRGB(255,255,255)
+
+	distanceText.TextStrokeTransparency = 0.4
+
+	distanceText.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	distanceText.Text = "0m"
+
+	espTable[targetPlayer] = {
+		root = hrp,
+		humanoid = humanoid,
+		healthBar = health,
+		distanceText = distanceText
+	}
+
+	updatePlayerCount()
+end
+
+local function setupPlayerESP(targetPlayer)
+
+	if targetPlayer == player then
+		return
+	end
+
+	if targetPlayer.Character then
+		createESP(targetPlayer)
+	end
+
+	targetPlayer.CharacterAdded:Connect(function()
+
+		task.wait(1)
+
+		if espEnabled then
+			createESP(targetPlayer)
+		end
+	end)
+end
+
+local function enableESP()
+
+	countLabel.Visible = true
+
+	for _,v in pairs(Players:GetPlayers()) do
+
+		if v ~= player then
+			setupPlayerESP(v)
+		end
+	end
+end
+
+local function disableESP()
+
+	countLabel.Visible = false
+
+	for _,v in pairs(Players:GetPlayers()) do
+		clearESP(v)
+	end
+
+	espTable = {}
+
+	updatePlayerCount()
+end
+
+ESPButton.MouseButton1Click:Connect(function()
+
+	espEnabled = not espEnabled
+
+	if espEnabled then
+
+		ESPButton.Text = "Định Vị ☄️: ON"
+
+		ESPButton.BackgroundColor3 =
+			Color3.fromRGB(0,170,255)
+
+		enableESP()
+
+	else
+
+		ESPButton.Text = "Định Vị ☄️: OFF"
+
+		ESPButton.BackgroundColor3 =
+			Color3.fromRGB(35,35,35)
+
+		disableESP()
+	end
+end)
+
+Players.PlayerAdded:Connect(function(v)
+
+	if espEnabled then
+		setupPlayerESP(v)
+	end
+end)
+
+-- =========================
+-- UPDATE
+-- =========================
+RunService.RenderStepped:Connect(function()
+
+	if not espEnabled then
+		return
+	end
+
+	if not player.Character then
+		return
+	end
+
+	local myRoot =
+		player.Character:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	if not myRoot then
+		return
+	end
+
+	for target,data in pairs(espTable) do
+
+		if data.humanoid
+		and data.healthBar
+		and data.distanceText
+		and target.Character then
+
+			local hum = data.humanoid
+
+			local hp =
+				math.clamp(
+					hum.Health / hum.MaxHealth,
+					0,
+					1
+				)
+
+			data.healthBar.Size =
+				UDim2.new(hp,0,1,0)
+
+			-- màu máu
+			if hp > 0.6 then
+
+				data.healthBar.BackgroundColor3 =
+					Color3.fromRGB(0,255,0)
+
+			elseif hp > 0.3 then
+
+				data.healthBar.BackgroundColor3 =
+					Color3.fromRGB(255,170,0)
+
+			else
+
+				data.healthBar.BackgroundColor3 =
+					Color3.fromRGB(255,0,0)
+			end
+
+			-- khoảng cách
+			local distance =
+				(
+					myRoot.Position
+					-
+					data.root.Position
+				).Magnitude
+
+			data.distanceText.Text =
+				math.floor(distance).."m"
+		end
+	end
+end)
+-- =========================
+-- AUTO AIMLOCK ONLY
+-- =========================
+
+local autoAimEnabled = false
+
+local autoAimButton =
+	createButton("Aimlock 📱 : OFF",160)
+
+autoAimButton.MouseButton1Click:Connect(function()
+
+	autoAimEnabled = not autoAimEnabled
+
+	autoAimButton.Text =
+		"Aimlock 📱: " ..
+		(autoAimEnabled and "ON" or "OFF")
+
+	autoAimButton.BackgroundColor3 =
+		autoAimEnabled
+		and Color3.fromRGB(255,0,0)
+		or Color3.fromRGB(35,35,35)
+end)
+
+-- =========================
+-- AUTO AIMLOCK LOOP
+-- =========================
+
+RunService.RenderStepped:Connect(function()
+
+	if not autoAimEnabled then
+		return
+	end
+
+	local target = getClosestTarget()
+
+	if target
+	and target.Character
+	and target.Character:FindFirstChild(AIM_PART) then
+
+		local aimPart =
+			target.Character[AIM_PART]
+
+		local velocity =
+			aimPart.AssemblyLinearVelocity
+
+		local predictedPosition =
+			aimPart.Position
+			+
+			Vector3.new(
+				velocity.X * PREDICTION,
+				velocity.Y * 0.015,
+				velocity.Z * PREDICTION
+			)
+
+		predictedPosition =
+			predictedPosition
+			+
+			Vector3.new(0,0.85,0)
+
+		local aimCF =
+			CFrame.lookAt(
+				camera.CFrame.Position,
+				predictedPosition
+			)
+
+		camera.CFrame =
+			camera.CFrame:Lerp(
+				aimCF,
+				AIMLOCK_STRENGTH
+			)
+	end
+end)
+
+print("Battlefield Aimlock Loaded")
