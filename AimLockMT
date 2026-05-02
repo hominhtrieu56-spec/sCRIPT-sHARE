@@ -1,3 +1,5 @@
+--// ROBLOX AIMLOCK MENU - BATTLEFIELD STYLE
+--// LocalScript
 
 repeat task.wait() until game:IsLoaded()
 
@@ -8,6 +10,10 @@ local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+
+-- =========================
+-- SETTINGS
+-- =========================
 
 local AIM_PART = "HumanoidRootPart"
 
@@ -22,6 +28,9 @@ local WALL_CHECK = true
 
 local PREDICTION = 0.08
 
+-- =========================
+-- STATES
+-- =========================
 local aimlockEnabled = false
 local fovAimEnabled = true
 local menuVisible = true
@@ -30,9 +39,13 @@ local currentTarget = nil
 local shooting = false
 local holding = false
 
+-- ESP
 local targetHighlight = nil
 local targetBillboard = nil
 
+-- =========================
+-- GUI
+-- =========================
 local gui = Instance.new("ScreenGui")
 gui.Name = "BattlefieldAimlock"
 gui.ResetOnSpawn = false
@@ -50,6 +63,10 @@ main.Draggable = true
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0,12)
 corner.Parent = main
+
+-- =========================
+-- TÊN MENU KHI THU GỌN
+-- =========================
 
 local miniTitle = Instance.new("TextLabel")
 miniTitle.Parent = main
@@ -76,6 +93,10 @@ miniTitle.TextXAlignment =
 	Enum.TextXAlignment.Left
 
 miniTitle.Visible = false
+
+-- =========================
+-- HIỆU ỨNG CHỮ ĐỎ TRẮNG
+-- =========================
 
 task.spawn(function()
 
@@ -121,6 +142,10 @@ task.spawn(function()
 		task.wait(0.7)
 	end
 end)
+
+-- =========================
+-- THU GỌN MENU
+-- =========================
 
 local minimized = false
 local normalSize = main.Size
@@ -212,7 +237,9 @@ minimizeButton.MouseButton1Click:Connect(function()
 		minimizeButton.Text = "—"
 	end
 end)
-
+-- =========================
+-- MAIN BORDER
+-- =========================
 local stroke = Instance.new("UIStroke")
 stroke.Parent = main
 stroke.Thickness = 3
@@ -244,6 +271,9 @@ task.spawn(function()
     end
 end)
 
+-- =========================
+-- TITLE
+-- =========================
 local title = Instance.new("TextLabel")
 title.Parent = main
 title.Size = UDim2.new(1,0,0,45)
@@ -251,6 +281,7 @@ title.BackgroundTransparency = 1
 
 title.Text = "MinhTrieu Aimlock V1 🚀"
 
+-- chữ mỏng hơn
 title.Font = Enum.Font.Gotham
 
 title.TextSize = 20
@@ -258,6 +289,7 @@ title.TextSize = 20
 title.TextColor3 =
 	Color3.fromRGB(255,255,255)
 
+-- hiệu ứng đổi màu đỏ trắng
 task.spawn(function()
 
 	local isRed = false
@@ -303,6 +335,9 @@ task.spawn(function()
 	end
 end)
 
+-- =========================
+-- BUTTON FUNCTION
+-- =========================
 local function createButton(name,posY)
 
     local button = Instance.new("TextButton")
@@ -323,6 +358,9 @@ local function createButton(name,posY)
     return button
 end
 
+-- =========================
+-- BUTTONS
+-- =========================
 local aimButton = createButton("Aimlock 💻 : OFF",60)
 
 local fovButton = createButton("FOV Giới hạn Aim : ON",210)
@@ -330,6 +368,9 @@ local fovButton = createButton("FOV Giới hạn Aim : ON",210)
 local toggleMenuButton =
     createButton("Ẩn Menu",360)
 
+-- =========================
+-- FOV BOX
+-- =========================
 local fovBox = Instance.new("TextBox")
 fovBox.Parent = main
 fovBox.Size = UDim2.new(0,220,0,38)
@@ -353,12 +394,15 @@ local applyButton =
 local destroyButton =
     createButton("❌",410)
 
+-- =========================
+-- OPEN BUTTON
+-- =========================
 local openButton = Instance.new("TextButton")
 openButton.Parent = gui
 openButton.Size = UDim2.new(0,120,0,38)
 openButton.Position = UDim2.new(0,20,0.5,-19)
 openButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
-openButton.Text = "YT mtsenkai ☄️"
+openButton.Text = "MT AIMLOCK V1"
 openButton.TextColor3 = Color3.fromRGB(255,255,255)
 openButton.Font = Enum.Font.GothamBold
 openButton.TextSize = 16
@@ -393,6 +437,9 @@ task.spawn(function()
     end
 end)
 
+-- =========================
+-- DRAG OPEN BUTTON
+-- =========================
 local draggingOpen = false
 local dragInputOpen
 local dragStartOpen
@@ -448,6 +495,11 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- =========================
+-- FOV
+-- =========================
+local viewport = camera.ViewportSize
+
 local circle = Drawing.new("Circle")
 circle.Visible = true
 circle.Radius = FOV_RADIUS
@@ -455,7 +507,41 @@ circle.Color = Color3.fromRGB(255,255,255)
 circle.Thickness = 2
 circle.Filled = false
 circle.Transparency = 1
+circle.NumSides = 100
 
+RunService.RenderStepped:Connect(function()
+
+	local pos
+
+	-- MOBILE
+	if UserInputService.TouchEnabled then
+
+		pos = Vector2.new(
+			viewport.X / 2,
+			viewport.Y / 2
+		)
+
+	-- PC
+	else
+
+		local mousePos =
+			UserInputService:GetMouseLocation()
+
+		pos = Vector2.new(
+			mousePos.X,
+			mousePos.Y
+		)
+	end
+
+	viewport = camera.ViewportSize
+
+	circle.Position = pos
+	circle.Radius = FOV_RADIUS
+end)
+
+-- =========================
+-- ESP FUNCTIONS
+-- =========================
 local function removeESP()
 
     if targetHighlight then
@@ -510,6 +596,9 @@ local function createESP(target)
     end
 end
 
+-- =========================
+-- FUNCTIONS
+-- =========================
 local function isVisible(targetPart)
 
     if not WALL_CHECK then
@@ -606,6 +695,9 @@ local function getClosestTarget()
     return closest
 end
 
+-- =========================
+-- INPUT
+-- =========================
 UserInputService.InputBegan:Connect(function(input,gp)
 
     if gp then
@@ -666,6 +758,9 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+-- =========================
+-- BUTTON EVENTS
+-- =========================
 aimButton.MouseButton1Click:Connect(function()
 
     aimlockEnabled = not aimlockEnabled
@@ -737,6 +832,9 @@ destroyButton.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
+-- =========================
+-- MAIN LOOP
+-- =========================
 RunService.RenderStepped:Connect(function()
 
     circle.Position = Vector2.new(
@@ -815,12 +913,18 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+-- =========================
+-- ĐỊNH VỊ PLAYER
+-- =========================
 
 local espEnabled = false
 local espTable = {}
 
 local ESPButton = createButton("Định Vị ☄️: OFF",110)
 
+-- =========================
+-- PLAYER COUNT UI
+-- =========================
 local countLabel = Instance.new("TextLabel")
 countLabel.Parent = gui
 countLabel.Size = UDim2.new(0,170,0,24)
@@ -840,6 +944,7 @@ countLabel.Visible = false
 
 countLabel.Text =
 	"MT☄️ Số Player : 0"
+
 local countCorner = Instance.new("UICorner")
 countCorner.CornerRadius = UDim.new(0,8)
 countCorner.Parent = countLabel
@@ -933,6 +1038,9 @@ local function createESP(targetPlayer)
 
 	clearESP(targetPlayer)
 
+	-- =========================
+	-- HIGHLIGHT XANH DƯƠNG
+	-- =========================
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "PlayerESP"
 	highlight.Adornee = character
@@ -949,6 +1057,9 @@ local function createESP(targetPlayer)
 	highlight.DepthMode =
 		Enum.HighlightDepthMode.AlwaysOnTop
 
+	-- =========================
+	-- HEALTH BAR + DISTANCE
+	-- =========================
 	local billboard =
 		Instance.new("BillboardGui")
 
@@ -989,6 +1100,7 @@ local function createESP(targetPlayer)
 
 	backCorner.Parent = back
 
+	-- máu
 	local health =
 		Instance.new("Frame")
 
@@ -1011,6 +1123,7 @@ local function createESP(targetPlayer)
 
 	healthCorner.Parent = health
 
+	-- khoảng cách
 	local distanceText =
 		Instance.new("TextLabel")
 
@@ -1125,6 +1238,9 @@ Players.PlayerAdded:Connect(function(v)
 	end
 end)
 
+-- =========================
+-- UPDATE
+-- =========================
 RunService.RenderStepped:Connect(function()
 
 	if not espEnabled then
@@ -1193,7 +1309,17 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 end)
+-- =========================
+-- MOBILE AUTO AIMLOCK PRO
+-- =========================
+
 local autoAimEnabled = false
+local lockedTarget = nil
+
+local AUTO_AIM_STRENGTH = 0.22
+local TARGET_SWITCH_DELAY = 0.15
+
+local lastSwitch = 0
 
 local autoAimButton =
 	createButton("Aimlock 📱 : OFF",160)
@@ -1201,6 +1327,10 @@ local autoAimButton =
 autoAimButton.MouseButton1Click:Connect(function()
 
 	autoAimEnabled = not autoAimEnabled
+
+	if not autoAimEnabled then
+		lockedTarget = nil
+	end
 
 	autoAimButton.Text =
 		"Aimlock 📱: " ..
@@ -1212,50 +1342,114 @@ autoAimButton.MouseButton1Click:Connect(function()
 		or Color3.fromRGB(35,35,35)
 end)
 
+-- =========================
+-- VALID TARGET
+-- =========================
+
+local function isTargetValid(target)
+
+	if not target
+	or not target.Character then
+		return false
+	end
+
+	local humanoid =
+		target.Character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	local aimPart =
+		target.Character:FindFirstChild(
+			AIM_PART
+		)
+
+	if not humanoid
+	or humanoid.Health <= 0
+	or not aimPart then
+		return false
+	end
+
+	-- team check
+	if TEAM_CHECK
+	and target.Team == player.Team then
+		return false
+	end
+
+	-- wall check
+	if not isVisible(aimPart) then
+		return false
+	end
+
+	return true
+end
+
+-- =========================
+-- AUTO AIM LOOP
+-- =========================
+
 RunService.RenderStepped:Connect(function()
 
 	if not autoAimEnabled then
 		return
 	end
 
-	local target = getClosestTarget()
+	-- giữ target ổn định
+	if not isTargetValid(lockedTarget) then
 
-	if target
-	and target.Character
-	and target.Character:FindFirstChild(AIM_PART) then
+		if tick() - lastSwitch >
+			TARGET_SWITCH_DELAY then
 
-		local aimPart =
-			target.Character[AIM_PART]
+			lockedTarget =
+				getClosestTarget()
 
-		local velocity =
-			aimPart.AssemblyLinearVelocity
-
-		local predictedPosition =
-			aimPart.Position
-			+
-			Vector3.new(
-				velocity.X * PREDICTION,
-				velocity.Y * 0.015,
-				velocity.Z * PREDICTION
-			)
-
-		predictedPosition =
-			predictedPosition
-			+
-			Vector3.new(0,0.85,0)
-
-		local aimCF =
-			CFrame.lookAt(
-				camera.CFrame.Position,
-				predictedPosition
-			)
-
-		camera.CFrame =
-			camera.CFrame:Lerp(
-				aimCF,
-				AIMLOCK_STRENGTH
-			)
+			lastSwitch = tick()
+		end
 	end
+
+	if not isTargetValid(lockedTarget) then
+		return
+	end
+
+	local aimPart =
+		lockedTarget.Character:FindFirstChild(
+			AIM_PART
+		)
+
+	if not aimPart then
+		return
+	end
+
+	local velocity =
+		aimPart.AssemblyLinearVelocity
+
+	-- prediction mượt hơn mobile
+	local predictedPosition =
+		aimPart.Position
+		+
+		Vector3.new(
+			velocity.X * 0.135,
+			velocity.Y * 0.03,
+			velocity.Z * 0.135
+		)
+
+	-- kéo tâm lên ngực/head
+	predictedPosition =
+		predictedPosition
+		+
+		Vector3.new(0,1.05,0)
+
+	local aimCF =
+		CFrame.lookAt(
+			camera.CFrame.Position,
+			predictedPosition
+		)
+
+	-- aim siêu ổn định
+	camera.CFrame =
+		camera.CFrame:Lerp(
+			aimCF,
+			AUTO_AIM_STRENGTH
+		)
 end)
 
-print("Aimlock Loaded")
+print("Battlefield Aimlock Loaded")
